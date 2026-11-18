@@ -138,7 +138,8 @@ export default function CatalogoPage() {
       {tab === "PRODUTOS" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredProducts.map((prod) => {
-            const isLowStock = prod.stock_quantity <= prod.min_stock;
+            const stockQty = prod.stock_quantity ?? prod.stock_qty ?? 0;
+            const isLowStock = stockQty <= prod.min_stock;
             const margin = ((prod.sale_price - prod.cost_price) / prod.sale_price) * 100;
 
             return (
@@ -166,7 +167,7 @@ export default function CatalogoPage() {
                   <div className="flex justify-between text-charcoal-600">
                     <span>Estoque Atual:</span>
                     <strong className={`tabular-nums ${isLowStock ? "text-amber-700" : "text-charcoal-800"}`}>
-                      {prod.stock_quantity} unidades (Mín: {prod.min_stock})
+                      {stockQty} unidades (Mín: {prod.min_stock})
                     </strong>
                   </div>
                   <div className="flex justify-between text-charcoal-600">

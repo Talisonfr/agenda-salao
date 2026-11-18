@@ -51,7 +51,7 @@ export interface Service {
   description?: string | null;
   price: number;
   duration_minutes: number;
-  commission_pct?: number;
+  commission_pct: number;
   commission_percentage?: number;
   active: boolean;
   created_at: string;
@@ -63,8 +63,8 @@ export interface Product {
   category: ProductCategory;
   cost_price: number;
   sale_price: number;
+  stock_quantity: number;
   stock_qty?: number;
-  stock_quantity?: number;
   min_stock: number;
   active: boolean;
   created_at: string;
@@ -72,9 +72,9 @@ export interface Product {
 
 export interface Customer {
   id: string;
+  full_name: string;
+  phone: string;
   name?: string;
-  full_name?: string;
-  phone?: string;
   whatsapp?: string;
   birth_date?: string | null;
   notes?: string | null;
@@ -86,16 +86,16 @@ export interface MonthlyPlan {
   customer_id: string;
   customer?: Customer;
   name: string;
+  monthly_fee: number;
   monthly_price?: number;
-  monthly_fee?: number;
+  total_sessions: number;
+  used_sessions: number;
   sessions_per_month?: number;
-  total_sessions?: number;
   sessions_used?: number;
-  used_sessions?: number;
   due_day: number;
   reference_month?: string;
+  status: PlanPaymentStatus;
   payment_status?: PlanPaymentStatus;
-  status?: PlanPaymentStatus;
   paid_at?: string | null;
   active?: boolean;
   created_at: string;
@@ -126,16 +126,16 @@ export interface Appointment {
   professional?: Profile;
   status: AppointmentStatus;
   source?: AppointmentSource;
-  scheduled_date?: string;
+  scheduled_date: string;
+  scheduled_time: string;
+  duration_minutes: number;
+  total_amount: number;
   requested_date?: string;
-  scheduled_time?: string;
   requested_from?: string;
   requested_to?: string;
   starts_at?: string | null;
   ends_at?: string | null;
-  duration_minutes: number;
   total_price?: number;
-  total_amount?: number;
   customer_notes?: string | null;
   internal_notes?: string | null;
   proposal_message?: string | null;
