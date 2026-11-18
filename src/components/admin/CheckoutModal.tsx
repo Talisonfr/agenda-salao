@@ -81,7 +81,7 @@ export function CheckoutModal({
       setIsCompleted(false);
 
       // Carrega produtos e serviços ativos do Supabase
-      async function fetchCatalog() {
+      const fetchCatalog = async () => {
         try {
           setLoadingCatalog(true);
           const [prodsRes, servsRes] = await Promise.all([
@@ -95,7 +95,7 @@ export function CheckoutModal({
         } finally {
           setLoadingCatalog(false);
         }
-      }
+      };
 
       fetchCatalog();
     }
