@@ -39,11 +39,14 @@ export function NegotiationModal({
 
   if (!isOpen || !appointment) return null;
 
-  const customerName = appointment.customer?.full_name || "Cliente";
-  const customerPhone = appointment.customer?.phone || "";
-  const servicesList = appointment.items?.map((i) => i.service?.name || "Serviço") || [
+  const customerName = appointment.customer?.full_name || appointment.customer?.name || "Cliente";
+  const customerPhone = appointment.customer?.phone || appointment.customer?.whatsapp || "";
+  const servicesList = appointment.items?.map((i) => i.service?.name || i.service_name || "Serviço") || [
     "Corte & Styling",
   ];
+  const requestedDate = appointment.scheduled_date || appointment.requested_date || "";
+  const requestedTime = appointment.scheduled_time || appointment.requested_from || "";
+  const totalAmount = appointment.total_amount ?? appointment.total_price ?? 0;
 
   const handleAddProposal = () => {
     if (newProposalInput.trim()) {
@@ -71,8 +74,8 @@ export function NegotiationModal({
       phone: customerPhone,
       customerName,
       serviceNames: servicesList,
-      requestedDate: appointment.scheduled_date,
-      requestedTime: appointment.scheduled_time,
+      requestedDate,
+      requestedTime,
       proposals,
     });
 
@@ -164,20 +167,20 @@ export function NegotiationModal({
                   <span className="text-charcoal-500">Data Solicitada:</span>
                   <span className="font-semibold text-charcoal-800 flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5 text-rose-500" />
-                    {appointment.scheduled_date}
+                    {requestedDate}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-charcoal-500">Horário Solicitado:</span>
                   <span className="font-semibold text-charcoal-800 flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5 text-rose-500" />
-                    {appointment.scheduled_time} ({appointment.duration_minutes} min)
+                    {requestedTime} ({appointment.duration_minutes} min)
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs pt-2 border-t border-charcoal-200">
                   <span className="text-charcoal-500">Valor Total Estimado:</span>
                   <span className="font-bold text-rose-600 text-sm tabular-nums">
-                    {formatCurrency(appointment.total_amount)}
+                    {formatCurrency(totalAmount)}
                   </span>
                 </div>
               </div>

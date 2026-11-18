@@ -19,12 +19,12 @@ import { Service, ServiceCategory } from "@/types/database";
 
 // Catálogo inicial mockado de serviços boutique para agendamento instantâneo
 const AVAILABLE_SERVICES: Service[] = [
-  { id: "1", name: "Corte & Styling Personalizado", category: "CABELO", price: 120, duration_minutes: 50, commission_percentage: 40, active: true, created_at: "" },
-  { id: "2", name: "Escova Modelada & Nutrição", category: "CABELO", price: 90, duration_minutes: 45, commission_percentage: 40, active: true, created_at: "" },
-  { id: "3", name: "Manicure & Pedicure Completa", category: "UNHAS", price: 75, duration_minutes: 60, commission_percentage: 50, active: true, created_at: "" },
-  { id: "4", name: "Alongamento em Gel Premium", category: "UNHAS", price: 180, duration_minutes: 90, commission_percentage: 50, active: true, created_at: "" },
-  { id: "5", name: "Design de Sobrancelha com Henna", category: "SOBRANCELHA", price: 65, duration_minutes: 35, commission_percentage: 45, active: true, created_at: "" },
-  { id: "6", name: "Limpeza de Pele Profunda", category: "ESTETICA", price: 160, duration_minutes: 75, commission_percentage: 40, active: true, created_at: "" },
+  { id: "1", name: "Corte & Styling Personalizado", category: "CABELO", price: 120, duration_minutes: 50, commission_pct: 40, commission_percentage: 40, active: true, created_at: "" },
+  { id: "2", name: "Escova Modelada & Nutrição", category: "CABELO", price: 90, duration_minutes: 45, commission_pct: 40, commission_percentage: 40, active: true, created_at: "" },
+  { id: "3", name: "Manicure & Pedicure Completa", category: "UNHAS", price: 75, duration_minutes: 60, commission_pct: 50, commission_percentage: 50, active: true, created_at: "" },
+  { id: "4", name: "Alongamento em Gel Premium", category: "UNHAS", price: 180, duration_minutes: 90, commission_pct: 50, commission_percentage: 50, active: true, created_at: "" },
+  { id: "5", name: "Design de Sobrancelha com Henna", category: "SOBRANCELHA", price: 65, duration_minutes: 35, commission_pct: 45, commission_percentage: 45, active: true, created_at: "" },
+  { id: "6", name: "Limpeza de Pele Profunda", category: "ESTETICA", price: 160, duration_minutes: 75, commission_pct: 40, commission_percentage: 40, active: true, created_at: "" },
 ];
 
 const PROFESSIONALS = [

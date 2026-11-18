@@ -139,11 +139,11 @@ export function FinanceDashboard() {
   const handleSendReminder = (plan: MonthlyPlan) => {
     if (!plan.customer) return;
     const link = buildWhatsAppReminderLink({
-      phone: plan.customer.phone,
-      customerName: plan.customer.full_name,
+      phone: plan.customer.phone || plan.customer.whatsapp || "",
+      customerName: plan.customer.full_name || plan.customer.name || "Cliente",
       planName: plan.name,
       dueDay: plan.due_day,
-      monthlyFee: plan.monthly_fee,
+      monthlyFee: plan.monthly_fee ?? plan.monthly_price ?? 0,
     });
     window.open(link, "_blank");
   };
@@ -449,7 +449,13 @@ export function FinanceDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {MONTHLY_PLANS.map((plan) => {
-            const usagePercent = (plan.used_sessions / plan.total_sessions) * 100;
+            const usedSessions = plan.used_sessions ?? plan.sessions_used ?? 0;
+            const totalSessions = plan.total_sessions ?? plan.sessions_per_month ?? 1;
+            const usagePercent = (usedSessions / totalSessions) * 100;
+            const status = plan.status ?? plan.payment_status ?? "PENDENTE";
+            const fee = plan.monthly_fee ?? plan.monthly_price ?? 0;
+            const customerName = plan.customer?.full_name || plan.customer?.name || "Cliente";
+
             return (
               <div
                 key={plan.id}
@@ -459,14 +465,14 @@ export function FinanceDashboard() {
                   <div className="flex items-center justify-between mb-1.5">
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        plan.status === "PAGO"
+                        status === "PAGO"
                           ? "bg-emerald-100 text-emerald-700"
-                          : plan.status === "PENDENTE"
+                          : status === "PENDENTE"
                           ? "bg-amber-100 text-amber-700"
                           : "bg-red-100 text-red-700"
                       }`}
                     >
-                      {plan.status}
+                      {status}
                     </span>
                     <span className="text-[11px] text-charcoal-400 font-medium">
                       Vencimento dia {plan.due_day}
@@ -474,7 +480,7 @@ export function FinanceDashboard() {
                   </div>
 
                   <h4 className="text-xs font-bold text-charcoal-800">
-                    {plan.customer?.full_name}
+                    {customerName}
                   </h4>
                   <p className="text-[11px] text-rose-600 font-medium">{plan.name}</p>
                 </div>
@@ -484,7 +490,7 @@ export function FinanceDashboard() {
                   <div className="flex justify-between text-[11px] text-charcoal-500 mb-1">
                     <span>Sessões Utilizadas:</span>
                     <strong className="text-charcoal-800">
-                      {plan.used_sessions} de {plan.total_sessions}
+                      {usedSessions} de {totalSessions}
                     </strong>
                   </div>
                   <div className="w-full bg-charcoal-200 rounded-full h-2 overflow-hidden">
@@ -497,9 +503,9 @@ export function FinanceDashboard() {
 
                 <div className="flex items-center justify-between pt-2 border-t border-charcoal-200">
                   <span className="font-bold text-charcoal-800 text-xs tabular-nums">
-                    {formatCurrency(plan.monthly_fee)}/mês
+                    {formatCurrency(fee)}/mês
                   </span>
-                  {plan.status !== "PAGO" && (
+                  {status !== "PAGO" && (
                     <button
                       onClick={() => handleSendReminder(plan)}
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-medium transition-colors"

@@ -16,18 +16,18 @@ import { formatCurrency } from "@/lib/utils";
 import { Service, Product } from "@/types/database";
 
 const SERVICES_DATA: Service[] = [
-  { id: "1", name: "Corte & Styling Personalizado", category: "CABELO", price: 120, duration_minutes: 50, commission_percentage: 40, active: true, created_at: "" },
-  { id: "2", name: "Escova Modelada & Nutrição", category: "CABELO", price: 90, duration_minutes: 45, commission_percentage: 40, active: true, created_at: "" },
-  { id: "3", name: "Manicure & Pedicure Completa", category: "UNHAS", price: 75, duration_minutes: 60, commission_percentage: 50, active: true, created_at: "" },
-  { id: "4", name: "Alongamento em Gel Premium", category: "UNHAS", price: 180, duration_minutes: 90, commission_percentage: 50, active: true, created_at: "" },
-  { id: "5", name: "Design de Sobrancelha com Henna", category: "SOBRANCELHA", price: 65, duration_minutes: 35, commission_percentage: 45, active: true, created_at: "" },
+  { id: "1", name: "Corte & Styling Personalizado", category: "CABELO", price: 120, duration_minutes: 50, commission_pct: 40, commission_percentage: 40, active: true, created_at: "" },
+  { id: "2", name: "Escova Modelada & Nutrição", category: "CABELO", price: 90, duration_minutes: 45, commission_pct: 40, commission_percentage: 40, active: true, created_at: "" },
+  { id: "3", name: "Manicure & Pedicure Completa", category: "UNHAS", price: 75, duration_minutes: 60, commission_pct: 50, commission_percentage: 50, active: true, created_at: "" },
+  { id: "4", name: "Alongamento em Gel Premium", category: "UNHAS", price: 180, duration_minutes: 90, commission_pct: 50, commission_percentage: 50, active: true, created_at: "" },
+  { id: "5", name: "Design de Sobrancelha com Henna", category: "SOBRANCELHA", price: 65, duration_minutes: 35, commission_pct: 45, commission_percentage: 45, active: true, created_at: "" },
 ];
 
 const PRODUCTS_DATA: Product[] = [
-  { id: "1", name: "Kit Shampoo & Máscara Cronograma", category: "KITS_CAPILARES", cost_price: 65, sale_price: 140, stock_quantity: 8, min_stock: 3, active: true, created_at: "" },
-  { id: "2", name: "Óleo Reparador Iluminador 60ml", category: "COSMETICOS", cost_price: 32, sale_price: 85, stock_quantity: 2, min_stock: 4, active: true, created_at: "" },
-  { id: "3", name: "Brinco Gota Zircônia Dourada", category: "SEMI_JOIAS", cost_price: 25, sale_price: 69, stock_quantity: 5, min_stock: 2, active: true, created_at: "" },
-  { id: "4", name: "Leave-in Térmico Protetor", category: "COSMETICOS", cost_price: 28, sale_price: 72, stock_quantity: 12, min_stock: 3, active: true, created_at: "" },
+  { id: "1", name: "Kit Shampoo & Máscara Cronograma", category: "KITS_CAPILARES", cost_price: 65, sale_price: 140, stock_qty: 8, stock_quantity: 8, min_stock: 3, active: true, created_at: "" },
+  { id: "2", name: "Óleo Reparador Iluminador 60ml", category: "COSMETICOS", cost_price: 32, sale_price: 85, stock_qty: 2, stock_quantity: 2, min_stock: 4, active: true, created_at: "" },
+  { id: "3", name: "Brinco Gota Zircônia Dourada", category: "SEMI_JOIAS", cost_price: 25, sale_price: 69, stock_qty: 5, stock_quantity: 5, min_stock: 2, active: true, created_at: "" },
+  { id: "4", name: "Leave-in Térmico Protetor", category: "COSMETICOS", cost_price: 28, sale_price: 72, stock_qty: 12, stock_quantity: 12, min_stock: 3, active: true, created_at: "" },
 ];
 
 export default function CatalogoPage() {

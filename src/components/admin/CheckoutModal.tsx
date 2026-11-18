@@ -38,10 +38,10 @@ interface CheckoutModalProps {
 
 // Catálogo mock de produtos disponíveis para adição imediata no checkout
 const CATALOG_PRODUCTS: Product[] = [
-  { id: "pr1", name: "Kit Shampoo & Máscara Cronograma", category: "KITS_CAPILARES", cost_price: 65, sale_price: 140, stock_quantity: 8, min_stock: 3, active: true, created_at: "" },
-  { id: "pr2", name: "Óleo Reparador Iluminador 60ml", category: "COSMETICOS", cost_price: 32, sale_price: 85, stock_quantity: 2, min_stock: 4, active: true, created_at: "" },
-  { id: "pr3", name: "Brinco Gota Zircônia Dourada", category: "SEMI_JOIAS", cost_price: 25, sale_price: 69, stock_quantity: 5, min_stock: 2, active: true, created_at: "" },
-  { id: "pr4", name: "Leave-in Térmico Protetor", category: "COSMETICOS", cost_price: 28, sale_price: 72, stock_quantity: 12, min_stock: 3, active: true, created_at: "" },
+  { id: "pr1", name: "Kit Shampoo & Máscara Cronograma", category: "KITS_CAPILARES", cost_price: 65, sale_price: 140, stock_qty: 8, stock_quantity: 8, min_stock: 3, active: true, created_at: "" },
+  { id: "pr2", name: "Óleo Reparador Iluminador 60ml", category: "COSMETICOS", cost_price: 32, sale_price: 85, stock_qty: 2, stock_quantity: 2, min_stock: 4, active: true, created_at: "" },
+  { id: "pr3", name: "Brinco Gota Zircônia Dourada", category: "SEMI_JOIAS", cost_price: 25, sale_price: 69, stock_qty: 5, stock_quantity: 5, min_stock: 2, active: true, created_at: "" },
+  { id: "pr4", name: "Leave-in Térmico Protetor", category: "COSMETICOS", cost_price: 28, sale_price: 72, stock_qty: 12, stock_quantity: 12, min_stock: 3, active: true, created_at: "" },
 ];
 
 export function CheckoutModal({
@@ -70,14 +70,15 @@ export function CheckoutModal({
   if (!isOpen) return null;
 
   const handleAddProduct = (product: Product) => {
-    if (product.stock_quantity <= 0) {
+    const stockAvailable = product.stock_quantity ?? product.stock_qty ?? 0;
+    if (stockAvailable <= 0) {
       alert("Produto esgotado no estoque.");
       return;
     }
 
     const existing = items.find((i) => i.id === product.id);
     if (existing) {
-      if (existing.quantity >= product.stock_quantity) {
+      if (existing.quantity >= stockAvailable) {
         alert("Quantidade máxima disponível em estoque atingida.");
         return;
       }
@@ -285,7 +286,8 @@ export function CheckoutModal({
 
             <div className="grid grid-cols-2 gap-2">
               {CATALOG_PRODUCTS.map((prod) => {
-                const isLowStock = prod.stock_quantity <= prod.min_stock;
+                const stockQty = prod.stock_quantity ?? prod.stock_qty ?? 0;
+                const isLowStock = stockQty <= prod.min_stock;
                 return (
                   <div
                     key={prod.id}
@@ -297,7 +299,7 @@ export function CheckoutModal({
                         <span className="uppercase">{prod.category.replace("_", " ")}</span>
                         {isLowStock && (
                           <span className="text-amber-600 font-semibold flex items-center gap-0.5">
-                            <AlertTriangle className="w-2.5 h-2.5" /> {prod.stock_quantity} un
+                            <AlertTriangle className="w-2.5 h-2.5" /> {stockQty} un
                           </span>
                         )}
                       </div>

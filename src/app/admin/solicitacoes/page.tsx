@@ -28,7 +28,7 @@ const INITIAL_REQUESTS: Appointment[] = [
     status: "PENDENTE_APROVACAO",
     total_amount: 120,
     items: [
-      { id: "i1", appointment_id: "req-1", item_type: "SERVICE", service: { id: "s1", name: "Corte & Styling Personalizado", category: "CABELO", price: 120, duration_minutes: 50, commission_percentage: 40, active: true, created_at: "" }, quantity: 1, unit_price: 120, professional_commission_amount: 48 }
+      { id: "i1", appointment_id: "req-1", item_type: "SERVICE", service: { id: "s1", name: "Corte & Styling Personalizado", category: "CABELO", price: 120, duration_minutes: 50, commission_pct: 40, commission_percentage: 40, active: true, created_at: "" }, quantity: 1, unit_price: 120, professional_commission_amount: 48 }
     ],
     created_at: "2026-11-17T18:30:00Z",
     updated_at: "2026-11-17T18:30:00Z",
@@ -43,8 +43,8 @@ const INITIAL_REQUESTS: Appointment[] = [
     status: "PENDENTE_APROVACAO",
     total_amount: 270,
     items: [
-      { id: "i2", appointment_id: "req-2", item_type: "SERVICE", service: { id: "s2", name: "Escova Modelada & Nutrição", category: "CABELO", price: 90, duration_minutes: 45, commission_percentage: 40, active: true, created_at: "" }, quantity: 1, unit_price: 90, professional_commission_amount: 36 },
-      { id: "i3", appointment_id: "req-2", item_type: "SERVICE", service: { id: "s4", name: "Alongamento em Gel Premium", category: "UNHAS", price: 180, duration_minutes: 90, commission_percentage: 50, active: true, created_at: "" }, quantity: 1, unit_price: 180, professional_commission_amount: 90 }
+      { id: "i2", appointment_id: "req-2", item_type: "SERVICE", service: { id: "s2", name: "Escova Modelada & Nutrição", category: "CABELO", price: 90, duration_minutes: 45, commission_pct: 40, commission_percentage: 40, active: true, created_at: "" }, quantity: 1, unit_price: 90, professional_commission_amount: 36 },
+      { id: "i3", appointment_id: "req-2", item_type: "SERVICE", service: { id: "s4", name: "Alongamento em Gel Premium", category: "UNHAS", price: 180, duration_minutes: 90, commission_pct: 50, commission_percentage: 50, active: true, created_at: "" }, quantity: 1, unit_price: 180, professional_commission_amount: 90 }
     ],
     created_at: "2026-11-17T19:15:00Z",
     updated_at: "2026-11-17T19:15:00Z",
@@ -60,7 +60,7 @@ const INITIAL_REQUESTS: Appointment[] = [
     negotiation_notes: "Sugerido quinta 15h ou sexta 10h via WhatsApp.",
     total_amount: 75,
     items: [
-      { id: "i4", appointment_id: "req-3", item_type: "SERVICE", service: { id: "s3", name: "Manicure & Pedicure Completa", category: "UNHAS", price: 75, duration_minutes: 60, commission_percentage: 50, active: true, created_at: "" }, quantity: 1, unit_price: 75, professional_commission_amount: 37.5 }
+      { id: "i4", appointment_id: "req-3", item_type: "SERVICE", service: { id: "s3", name: "Manicure & Pedicure Completa", category: "UNHAS", price: 75, duration_minutes: 60, commission_pct: 50, commission_percentage: 50, active: true, created_at: "" }, quantity: 1, unit_price: 75, professional_commission_amount: 37.5 }
     ],
     created_at: "2026-11-17T17:00:00Z",
     updated_at: "2026-11-17T17:20:00Z",
