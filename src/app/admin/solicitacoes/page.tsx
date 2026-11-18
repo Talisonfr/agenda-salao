@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Clock, 
   Calendar, 
@@ -11,79 +11,105 @@ import {
   Sparkles, 
   Filter,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Copy,
+  ExternalLink
 } from "lucide-react";
 import { formatCurrency, formatPhone } from "@/lib/utils";
 import { Appointment, AppointmentStatus } from "@/types/database";
 import { NegotiationModal } from "@/components/admin/NegotiationModal";
-
-const INITIAL_REQUESTS: Appointment[] = [
-  {
-    id: "req-1",
-    customer_id: "c1",
-    customer: { id: "c1", full_name: "Isabela Fonseca", phone: "11998765432", created_at: "" },
-    scheduled_date: "2026-11-20",
-    scheduled_time: "14:00",
-    duration_minutes: 50,
-    status: "PENDENTE_APROVACAO",
-    total_amount: 120,
-    items: [
-      { id: "i1", appointment_id: "req-1", item_type: "SERVICE", service: { id: "s1", name: "Corte & Styling Personalizado", category: "CABELO", price: 120, duration_minutes: 50, commission_pct: 40, commission_percentage: 40, active: true, created_at: "" }, quantity: 1, unit_price: 120, professional_commission_amount: 48 }
-    ],
-    created_at: "2026-11-17T18:30:00Z",
-    updated_at: "2026-11-17T18:30:00Z",
-  },
-  {
-    id: "req-2",
-    customer_id: "c2",
-    customer: { id: "c2", full_name: "Renata Guimarães", phone: "11987654321", created_at: "" },
-    scheduled_date: "2026-11-21",
-    scheduled_time: "16:00",
-    duration_minutes: 105,
-    status: "PENDENTE_APROVACAO",
-    total_amount: 270,
-    items: [
-      { id: "i2", appointment_id: "req-2", item_type: "SERVICE", service: { id: "s2", name: "Escova Modelada & Nutrição", category: "CABELO", price: 90, duration_minutes: 45, commission_pct: 40, commission_percentage: 40, active: true, created_at: "" }, quantity: 1, unit_price: 90, professional_commission_amount: 36 },
-      { id: "i3", appointment_id: "req-2", item_type: "SERVICE", service: { id: "s4", name: "Alongamento em Gel Premium", category: "UNHAS", price: 180, duration_minutes: 90, commission_pct: 50, commission_percentage: 50, active: true, created_at: "" }, quantity: 1, unit_price: 180, professional_commission_amount: 90 }
-    ],
-    created_at: "2026-11-17T19:15:00Z",
-    updated_at: "2026-11-17T19:15:00Z",
-  },
-  {
-    id: "req-3",
-    customer_id: "c3",
-    customer: { id: "c3", full_name: "Carolina Meireles", phone: "11976543210", created_at: "" },
-    scheduled_date: "2026-11-22",
-    scheduled_time: "10:00",
-    duration_minutes: 60,
-    status: "EM_NEGOCIACAO",
-    negotiation_notes: "Sugerido quinta 15h ou sexta 10h via WhatsApp.",
-    total_amount: 75,
-    items: [
-      { id: "i4", appointment_id: "req-3", item_type: "SERVICE", service: { id: "s3", name: "Manicure & Pedicure Completa", category: "UNHAS", price: 75, duration_minutes: 60, commission_pct: 50, commission_percentage: 50, active: true, created_at: "" }, quantity: 1, unit_price: 75, professional_commission_amount: 37.5 }
-    ],
-    created_at: "2026-11-17T17:00:00Z",
-    updated_at: "2026-11-17T17:20:00Z",
-  },
-];
+import { supabase } from "@/lib/supabase/client";
 
 export default function SolicitacoesPage() {
-  const [requests, setRequests] = useState<Appointment[]>(INITIAL_REQUESTS);
+  const [requests, setRequests] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<AppointmentStatus | "TODOS">("TODOS");
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const loadRequests = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("*, customer:customers(*), items:appointment_items(*), professional:profiles(*)")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Erro ao carregar solicitações:", error);
+      } else if (data) {
+        const formatted: Appointment[] = data.map((item: any) => ({
+          ...item,
+          scheduled_date: item.requested_date || item.scheduled_date || "",
+          scheduled_time: (item.requested_from || item.scheduled_time || "").slice(0, 5),
+          total_amount: item.total_price ?? item.total_amount ?? 0,
+          negotiation_notes: item.proposal_message || item.negotiation_notes || "",
+          customer: item.customer
+            ? {
+                ...item.customer,
+                full_name: item.customer.name || item.customer.full_name || "Cliente",
+                phone: item.customer.whatsapp || item.customer.phone || "",
+              }
+            : undefined,
+          items: item.items?.map((it: any) => ({
+            ...it,
+            service: {
+              name: it.service_name || "Procedimento",
+              price: it.price || 0,
+            },
+          })),
+        }));
+        setRequests(formatted);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRequests();
+  }, []);
 
   const handleOpenNegotiation = (app: Appointment) => {
     setSelectedAppointment(app);
     setIsModalOpen(true);
   };
 
-  const handleStatusChange = (id: string, newStatus: AppointmentStatus, notes?: string) => {
-    setRequests(
-      requests.map((r) =>
-        r.id === id ? { ...r, status: newStatus, negotiation_notes: notes || r.negotiation_notes } : r
-      )
-    );
+  const handleStatusChange = async (id: string, newStatus: AppointmentStatus, notes?: string) => {
+    try {
+      const updatePayload: any = { status: newStatus };
+      if (notes) {
+        updatePayload.proposal_message = notes;
+      }
+
+      const { error } = await supabase
+        .from("appointments")
+        .update(updatePayload)
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === id ? { ...r, status: newStatus, negotiation_notes: notes || r.negotiation_notes } : r
+        )
+      );
+    } catch (err: any) {
+      console.error("Erro ao atualizar status:", err);
+      alert(`Erro ao atualizar status: ${err.message || "Tente novamente"}`);
+    }
+  };
+
+  const copyPublicLink = () => {
+    const url = typeof window !== "undefined" ? `${window.location.origin}/agendar` : "";
+    if (url) {
+      navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    }
   };
 
   const filtered = filterStatus === "TODOS"
@@ -102,7 +128,7 @@ export default function SolicitacoesPage() {
             Solicitações de Agendamento
           </h1>
           <p className="text-xs text-charcoal-500 mt-0.5">
-            Avalie, aprove ou faça contraproposta de horário via WhatsApp com 1 clique.
+            Avalie, aprove ou envie contraproposta de horário com 1 clique pelo WhatsApp.
           </p>
         </div>
 
@@ -130,23 +156,72 @@ export default function SolicitacoesPage() {
         </div>
       </div>
 
-      {/* Requests List */}
-      <div className="space-y-3">
-        {filtered.length === 0 ? (
-          <div className="p-8 text-center bg-white rounded-3xl border border-charcoal-200/80 text-charcoal-400">
-            <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-            <h3 className="font-serif text-base font-semibold text-charcoal-700">
-              Tudo em dia!
+      {/* Loading state */}
+      {loading ? (
+        <div className="p-12 text-center text-charcoal-400 bg-white rounded-3xl border border-charcoal-200/70">
+          <div className="w-6 h-6 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <p className="text-xs">Buscando solicitações no banco...</p>
+        </div>
+      ) : requests.length === 0 ? (
+        /* Empty State */
+        <div className="p-10 text-center bg-white rounded-3xl border border-charcoal-200/80 shadow-soft max-w-md mx-auto my-6 space-y-4">
+          <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100">
+            <CheckCircle2 className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="font-serif text-lg font-bold text-charcoal-800">
+              Tudo em dia! Nenhuma solicitação pendente
             </h3>
-            <p className="text-xs text-charcoal-400 mt-1">
-              Nenhuma solicitação encontrada neste filtro.
+            <p className="text-xs text-charcoal-500 mt-1 leading-relaxed">
+              Compartilhe o link do seu salão no Instagram e WhatsApp para que suas clientes solicitem horários com facilidade.
             </p>
           </div>
-        ) : (
-          filtered.map((req) => {
+
+          <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
+            <button
+              onClick={copyPublicLink}
+              className="py-3 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-luxury transition-all"
+            >
+              {copiedLink ? (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>Link Copiado com Sucesso!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  <span>Copiar Link de Agendamento</span>
+                </>
+              )}
+            </button>
+
+            <a
+              href="/agendar"
+              target="_blank"
+              rel="noreferrer"
+              className="py-3 px-4 border border-charcoal-200 hover:bg-charcoal-50 text-charcoal-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Abrir Página de Agendamento</span>
+            </a>
+          </div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="p-8 text-center bg-white rounded-3xl border border-charcoal-200/80 text-charcoal-400">
+          <p className="text-xs">Nenhuma solicitação encontrada neste filtro.</p>
+        </div>
+      ) : (
+        /* Requests List */
+        <div className="space-y-3">
+          {filtered.map((req) => {
             const isPending = req.status === "PENDENTE_APROVACAO";
             const isNegotiating = req.status === "EM_NEGOCIACAO";
             const isConfirmed = req.status === "CONFIRMADO";
+            const customerName = req.customer?.full_name || req.customer?.name || "Cliente";
+            const customerPhone = req.customer?.phone || req.customer?.whatsapp || "";
+            const servicesText = req.items && req.items.length > 0
+              ? req.items.map((i) => i.service?.name || i.service_name).join(" + ")
+              : "Procedimento";
 
             return (
               <div
@@ -167,26 +242,26 @@ export default function SolicitacoesPage() {
                       {isPending ? "Pendente Aprovação" : isNegotiating ? "Em Negociação WhatsApp" : "Confirmado"}
                     </span>
                     <span className="text-[11px] text-charcoal-400">
-                      Recebido hoje
+                      Recebido em {new Date(req.created_at).toLocaleDateString("pt-BR")}
                     </span>
                   </div>
 
                   <div>
                     <h3 className="text-sm font-bold text-charcoal-800">
-                      {req.customer?.full_name}
+                      {customerName}
                     </h3>
                     <p className="text-xs text-charcoal-500">
-                      WhatsApp: {formatPhone(req.customer?.phone || "")}
+                      WhatsApp: {formatPhone(customerPhone)}
                     </p>
                   </div>
 
                   {/* Procedures and Total */}
                   <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-charcoal-600">
                     <span className="font-medium bg-charcoal-50 px-2.5 py-1 rounded-lg border border-charcoal-200/70">
-                      {req.items?.map((i) => i.service?.name).join(" + ")}
+                      {servicesText}
                     </span>
                     <span className="text-rose-600 font-bold tabular-nums">
-                      {formatCurrency(req.total_amount)}
+                      {formatCurrency(req.total_amount || 0)}
                     </span>
                   </div>
 
@@ -194,7 +269,7 @@ export default function SolicitacoesPage() {
                   <div className="flex items-center gap-4 text-xs text-charcoal-500 pt-1">
                     <div className="flex items-center gap-1 font-medium text-charcoal-700">
                       <Calendar className="w-3.5 h-3.5 text-rose-500" />
-                      <span>{req.scheduled_date}</span>
+                      <span>{req.scheduled_date ? req.scheduled_date.split("-").reverse().join("/") : "Data a definir"}</span>
                     </div>
                     <div className="flex items-center gap-1 font-medium text-charcoal-700">
                       <Clock className="w-3.5 h-3.5 text-rose-500" />
@@ -231,9 +306,9 @@ export default function SolicitacoesPage() {
                 </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
 
       {/* Modal de Negociação */}
       <NegotiationModal

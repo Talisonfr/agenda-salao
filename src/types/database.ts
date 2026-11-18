@@ -72,8 +72,8 @@ export interface Product {
 
 export interface Customer {
   id: string;
-  full_name: string;
-  phone: string;
+  full_name?: string;
+  phone?: string;
   name?: string;
   whatsapp?: string;
   birth_date?: string | null;
@@ -126,10 +126,10 @@ export interface Appointment {
   professional?: Profile;
   status: AppointmentStatus;
   source?: AppointmentSource;
-  scheduled_date: string;
-  scheduled_time: string;
+  scheduled_date?: string;
+  scheduled_time?: string;
   duration_minutes: number;
-  total_amount: number;
+  total_amount?: number;
   requested_date?: string;
   requested_from?: string;
   requested_to?: string;
@@ -139,12 +139,12 @@ export interface Appointment {
   customer_notes?: string | null;
   internal_notes?: string | null;
   proposal_message?: string | null;
-  proposed_options?: Array<{ date: string; time: string; professional_id?: string }>;
+  proposed_options?: any;
   negotiation_notes?: string;
   decline_reason?: string | null;
   items?: AppointmentItem[];
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export interface Transaction {

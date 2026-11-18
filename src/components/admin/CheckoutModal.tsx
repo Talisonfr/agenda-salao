@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   X, 
   Plus, 
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Product, Service, PaymentMethod } from "@/types/database";
+import { supabase } from "@/lib/supabase/client";
 
 interface CartItem {
   id: string;
@@ -26,53 +27,86 @@ interface CartItem {
   costPrice?: number;
   quantity: number;
   commissionRate: number; // %
+  serviceId?: string;
+  productId?: string;
 }
 
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   customerName?: string;
-  initialServices?: { name: string; price: number; commissionRate: number }[];
+  customerId?: string;
+  appointmentId?: string;
+  initialServices?: { name: string; price: number; commissionRate: number; serviceId?: string }[];
   onFinishCheckout: (transactionData: any) => void;
 }
-
-// Catálogo mock de produtos disponíveis para adição imediata no checkout
-const CATALOG_PRODUCTS: Product[] = [
-  { id: "pr1", name: "Kit Shampoo & Máscara Cronograma", category: "KITS_CAPILARES", cost_price: 65, sale_price: 140, stock_qty: 8, stock_quantity: 8, min_stock: 3, active: true, created_at: "" },
-  { id: "pr2", name: "Óleo Reparador Iluminador 60ml", category: "COSMETICOS", cost_price: 32, sale_price: 85, stock_qty: 2, stock_quantity: 2, min_stock: 4, active: true, created_at: "" },
-  { id: "pr3", name: "Brinco Gota Zircônia Dourada", category: "SEMI_JOIAS", cost_price: 25, sale_price: 69, stock_qty: 5, stock_quantity: 5, min_stock: 2, active: true, created_at: "" },
-  { id: "pr4", name: "Leave-in Térmico Protetor", category: "COSMETICOS", cost_price: 28, sale_price: 72, stock_qty: 12, stock_quantity: 12, min_stock: 3, active: true, created_at: "" },
-];
 
 export function CheckoutModal({
   isOpen,
   onClose,
   customerName = "Cliente Balcão",
-  initialServices = [{ name: "Escova Modelada", price: 90, commissionRate: 40 }],
+  customerId,
+  appointmentId,
+  initialServices = [],
   onFinishCheckout,
 }: CheckoutModalProps) {
-  const [items, setItems] = useState<CartItem[]>(() =>
-    initialServices.map((s, idx) => ({
-      id: `init-${idx}`,
-      name: s.name,
-      type: "SERVICE",
-      unitPrice: s.price,
-      quantity: 1,
-      commissionRate: s.commissionRate,
-    }))
-  );
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
+  const [catalogServices, setCatalogServices] = useState<Service[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(false);
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("PIX");
   const [installments, setInstallments] = useState<number>(1);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
 
+  // Inicializa itens com initialServices se houver
+  useEffect(() => {
+    if (isOpen) {
+      if (initialServices.length > 0) {
+        setItems(
+          initialServices.map((s, idx) => ({
+            id: `init-${idx}`,
+            name: s.name,
+            type: "SERVICE",
+            unitPrice: s.price,
+            quantity: 1,
+            commissionRate: s.commissionRate,
+            serviceId: s.serviceId,
+          }))
+        );
+      } else {
+        setItems([]);
+      }
+      setIsCompleted(false);
+
+      // Carrega produtos e serviços ativos do Supabase
+      async function fetchCatalog() {
+        try {
+          setLoadingCatalog(true);
+          const [prodsRes, servsRes] = await Promise.all([
+            supabase.from("products").select("*").eq("active", true).order("name"),
+            supabase.from("services").select("*").eq("active", true).order("name"),
+          ]);
+          if (prodsRes.data) setCatalogProducts(prodsRes.data);
+          if (servsRes.data) setCatalogServices(servsRes.data);
+        } catch (err) {
+          console.error("Erro ao carregar catálogo para checkout:", err);
+        } finally {
+          setLoadingCatalog(false);
+        }
+      }
+
+      fetchCatalog();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleAddProduct = (product: Product) => {
     const stockAvailable = product.stock_quantity ?? product.stock_qty ?? 0;
     if (stockAvailable <= 0) {
-      alert("Produto esgotado no estoque.");
+      alert(`Produto "${product.name}" está esgotado no estoque.`);
       return;
     }
 
@@ -92,15 +126,31 @@ export function CheckoutModal({
         ...items,
         {
           id: product.id,
+          productId: product.id,
           name: product.name,
           type: "PRODUCT",
           unitPrice: product.sale_price,
           costPrice: product.cost_price,
           quantity: 1,
-          commissionRate: 0, // Produtos geralmente não geram comissão direta ou percentual específico
+          commissionRate: 0,
         },
       ]);
     }
+  };
+
+  const handleAddService = (service: Service) => {
+    setItems([
+      ...items,
+      {
+        id: `srv-${Date.now()}-${Math.random()}`,
+        serviceId: service.id,
+        name: service.name,
+        type: "SERVICE",
+        unitPrice: service.price,
+        quantity: 1,
+        commissionRate: service.commission_pct ?? service.commission_percentage ?? 40,
+      },
+    ]);
   };
 
   const handleRemoveItem = (id: string) => {
@@ -121,19 +171,87 @@ export function CheckoutModal({
     .reduce((sum, i) => sum + (i.costPrice || 0) * i.quantity, 0);
 
   const totalAmount = servicesSubtotal + productsSubtotal;
-
-  // Lucro bruto de revenda
   const productProfit = productsSubtotal - productsCostTotal;
-
-  // Total de repasse/comissão para o profissional
   const totalCommission = items
     .filter((i) => i.type === "SERVICE")
     .reduce((sum, i) => sum + (i.unitPrice * i.quantity * i.commissionRate) / 100, 0);
 
-  const handleCompleteOrder = () => {
-    setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
+  const handleCompleteOrder = async () => {
+    if (items.length === 0) {
+      alert("Adicione pelo menos um item à comanda.");
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+
+      // 1. Cria transação no Supabase
+      const { data: txData, error: txError } = await supabase
+        .from("transactions")
+        .insert({
+          appointment_id: appointmentId || null,
+          customer_id: customerId || null,
+          payment_method: paymentMethod === "PLANO_MENSAL" ? "PLANO" : paymentMethod,
+          installments: paymentMethod === "CREDITO" ? installments : 1,
+          fee_pct: paymentMethod === "CREDITO" ? 2.5 : paymentMethod === "DEBITO" ? 1.2 : 0,
+          subtotal: totalAmount,
+          discount: 0,
+          fee_amount: 0,
+          total: totalAmount,
+          occurred_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (txError) {
+        console.warn("Aviso ao salvar transação:", txError);
+      }
+
+      // 2. Insere itens da transação se tiver txData
+      if (txData?.id) {
+        const txItems = items.map((i) => ({
+          transaction_id: txData.id,
+          kind: i.type === "PRODUCT" ? "PRODUTO" : "SERVICO",
+          service_id: i.serviceId || null,
+          product_id: i.productId || (i.type === "PRODUCT" ? i.id : null),
+          description: i.name,
+          quantity: i.quantity,
+          unit_price: i.unitPrice,
+          unit_cost: i.costPrice || 0,
+          commission_pct: i.commissionRate || 0,
+          covered_by_plan: paymentMethod === "PLANO_MENSAL",
+        }));
+
+        await supabase.from("transaction_items").insert(txItems);
+
+        // 3. Baixa no estoque para produtos
+        const productsSold = items.filter((i) => i.type === "PRODUCT");
+        for (const p of productsSold) {
+          const prodId = p.productId || p.id;
+          const currentProd = catalogProducts.find((cp) => cp.id === prodId);
+          if (currentProd) {
+            const currentQty = currentProd.stock_quantity ?? currentProd.stock_qty ?? 0;
+            const newQty = Math.max(0, currentQty - p.quantity);
+            await supabase.from("products").update({ stock_qty: newQty }).eq("id", prodId);
+            await supabase.from("stock_movements").insert({
+              product_id: prodId,
+              type: "SAIDA_VENDA",
+              quantity: -p.quantity,
+              unit_cost: p.costPrice || 0,
+              transaction_id: txData.id,
+            });
+          }
+        }
+      }
+
+      // 4. Se havia agendamento vinculado, atualiza status para CONCLUIDO
+      if (appointmentId) {
+        await supabase
+          .from("appointments")
+          .update({ status: "CONCLUIDO" })
+          .eq("id", appointmentId);
+      }
+
       setIsCompleted(true);
       onFinishCheckout({
         totalAmount,
@@ -144,13 +262,19 @@ export function CheckoutModal({
         paymentMethod,
         installments: paymentMethod === "CREDITO" ? installments : 1,
         items,
+        txId: txData?.id,
       });
-    }, 700);
+    } catch (err: any) {
+      console.error("Erro ao finalizar comanda:", err);
+      alert(`Erro ao finalizar comanda: ${err.message || "Tente novamente"}`);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (isCompleted) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-900/60 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-900/60 backdrop-blur-sm animate-fade-in">
         <div className="max-w-sm w-full bg-white rounded-3xl p-6 text-center shadow-luxury border border-charcoal-200">
           <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8" />
@@ -159,7 +283,7 @@ export function CheckoutModal({
             Comanda Fechada!
           </h3>
           <p className="text-xs text-charcoal-500 mb-4">
-            Venda registrada e estoque atualizado com sucesso.
+            Venda registrada no financeiro e estoque atualizado com sucesso.
           </p>
 
           <div className="p-4 rounded-2xl bg-charcoal-50 border border-charcoal-200/80 text-xs text-left space-y-2 mb-6">
@@ -188,9 +312,9 @@ export function CheckoutModal({
               setIsCompleted(false);
               onClose();
             }}
-            className="w-full py-3 bg-charcoal-800 hover:bg-charcoal-900 text-white rounded-xl text-xs font-semibold"
+            className="w-full py-3 bg-charcoal-800 hover:bg-charcoal-900 text-white rounded-xl text-xs font-semibold transition-all"
           >
-            Concluir & Voltar
+            Concluir & Fechar
           </button>
         </div>
       </div>
@@ -198,7 +322,7 @@ export function CheckoutModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-charcoal-900/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-charcoal-900/60 backdrop-blur-sm animate-fade-in">
       <div className="w-full sm:max-w-xl bg-white rounded-t-3xl sm:rounded-3xl shadow-luxury border border-charcoal-200/80 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-6 py-4 border-b border-charcoal-200/80 flex items-center justify-between bg-charcoal-50/50">
@@ -231,7 +355,7 @@ export function CheckoutModal({
 
             {items.length === 0 ? (
               <p className="text-xs text-charcoal-400 text-center py-4 bg-charcoal-50 rounded-2xl border border-dashed border-charcoal-200">
-                Nenhum item na comanda. Adicione serviços ou produtos abaixo.
+                Nenhum item na comanda ainda. Adicione serviços ou produtos abaixo.
               </p>
             ) : (
               <div className="space-y-2">
@@ -275,51 +399,81 @@ export function CheckoutModal({
             )}
           </div>
 
+          {/* Adicionar Serviços Adicionais */}
+          {catalogServices.length > 0 && (
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-charcoal-500 flex items-center gap-1.5 mb-2">
+                <Scissors className="w-3.5 h-3.5 text-rose-500" />
+                Adicionar Outro Procedimento / Serviço
+              </h4>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                {catalogServices.map((srv) => (
+                  <button
+                    key={srv.id}
+                    onClick={() => handleAddService(srv)}
+                    className="p-2.5 rounded-xl border border-charcoal-200/80 bg-white hover:border-rose-300 text-left shrink-0 transition-all text-xs"
+                  >
+                    <div className="font-semibold text-charcoal-800">{srv.name}</div>
+                    <div className="text-rose-600 font-bold tabular-nums mt-0.5">
+                      {formatCurrency(srv.price)}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Venda Casada: Adicionar Produtos Físicos na Hora */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-charcoal-500 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-rose-500" />
-                Venda Adicional (Revenda de Produtos)
+                Venda Adicional (Revenda de Cosméticos & Acessórios)
               </h4>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              {CATALOG_PRODUCTS.map((prod) => {
-                const stockQty = prod.stock_quantity ?? prod.stock_qty ?? 0;
-                const isLowStock = stockQty <= prod.min_stock;
-                return (
-                  <div
-                    key={prod.id}
-                    onClick={() => handleAddProduct(prod)}
-                    className="p-2.5 rounded-xl border border-charcoal-200/80 bg-white hover:border-rose-300 hover:bg-rose-50/20 cursor-pointer transition-all flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between text-[10px] text-charcoal-400 mb-1">
-                        <span className="uppercase">{prod.category.replace("_", " ")}</span>
-                        {isLowStock && (
-                          <span className="text-amber-600 font-semibold flex items-center gap-0.5">
-                            <AlertTriangle className="w-2.5 h-2.5" /> {stockQty} un
-                          </span>
-                        )}
+            {catalogProducts.length === 0 ? (
+              <p className="text-xs text-charcoal-400 text-center py-3 bg-charcoal-50 rounded-2xl border border-charcoal-200/60">
+                Nenhum produto cadastrado no estoque ainda. Cadastre cosméticos ou semi-joias no menu Catálogo & Estoque.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {catalogProducts.map((prod) => {
+                  const stockQty = prod.stock_quantity ?? prod.stock_qty ?? 0;
+                  const isLowStock = stockQty <= prod.min_stock;
+                  return (
+                    <div
+                      key={prod.id}
+                      onClick={() => handleAddProduct(prod)}
+                      className="p-2.5 rounded-xl border border-charcoal-200/80 bg-white hover:border-rose-300 hover:bg-rose-50/20 cursor-pointer transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between text-[10px] text-charcoal-400 mb-1">
+                          <span className="uppercase">{prod.category.replace("_", " ")}</span>
+                          {isLowStock && (
+                            <span className="text-amber-600 font-semibold flex items-center gap-0.5">
+                              <AlertTriangle className="w-2.5 h-2.5" /> {stockQty} un
+                            </span>
+                          )}
+                        </div>
+                        <h5 className="text-xs font-semibold text-charcoal-800 line-clamp-1">
+                          {prod.name}
+                        </h5>
                       </div>
-                      <h5 className="text-xs font-semibold text-charcoal-800 line-clamp-1">
-                        {prod.name}
-                      </h5>
-                    </div>
 
-                    <div className="flex items-center justify-between mt-2 pt-1 border-t border-charcoal-100">
-                      <span className="text-xs font-bold text-rose-600 tabular-nums">
-                        {formatCurrency(prod.sale_price)}
-                      </span>
-                      <span className="p-1 rounded-md bg-charcoal-100 hover:bg-rose-500 hover:text-white transition-colors text-charcoal-600">
-                        <Plus className="w-3 h-3" />
-                      </span>
+                      <div className="flex items-center justify-between mt-2 pt-1 border-t border-charcoal-100">
+                        <span className="text-xs font-bold text-rose-600 tabular-nums">
+                          {formatCurrency(prod.sale_price)}
+                        </span>
+                        <span className="p-1 rounded-md bg-charcoal-100 hover:bg-rose-500 hover:text-white transition-colors text-charcoal-600">
+                          <Plus className="w-3 h-3" />
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Forma de Pagamento */}
