@@ -1,0 +1,47 @@
+{
+  "name": "Agenda Salão & Gestão Boutique",
+  "short_name": "Agenda Salão",
+  "description": "Gestão completa, agendamento inteligente e controle financeiro para salão de beleza.",
+  "start_url": "/admin/agenda",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F7F6F8",
+  "theme_color": "#1E1E24",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Agenda Hoje",
+      "short_name": "Agenda",
+      "description": "Ver a grade de atendimentos do dia",
+      "url": "/admin/agenda",
+      "icons": [{ "src": "/icons/calendar.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Solicitações",
+      "short_name": "Solicitações",
+      "description": "Triagem e negociação de horários",
+      "url": "/admin/solicitacoes",
+      "icons": [{ "src": "/icons/requests.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Nova Comanda",
+      "short_name": "Checkout",
+      "description": "Fechar atendimento e registrar venda",
+      "url": "/admin/comanda",
+      "icons": [{ "src": "/icons/checkout.png", "sizes": "96x96" }]
+    }
+  ]
+}
